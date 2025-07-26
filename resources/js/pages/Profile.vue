@@ -103,7 +103,7 @@ const submitPasswordForm = () => passwordForm.submit()
 					@click:append-inner="showPasswordConfirm = !showPasswordConfirm"
 				></v-text-field>
 
-				<v-btn variant="outlined" color="green" type="submit" block
+				<v-btn variant="outlined" color="primary" type="submit" block
 					:loading="passwordForm.processing"
 					:disabled="passwordForm.processing"
 				>Изменить пароль</v-btn>

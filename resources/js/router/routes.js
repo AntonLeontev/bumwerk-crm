@@ -14,7 +14,7 @@ export default [
         meta: { auth: true, title: "Профиль" },
     },
     {
-        path: "/users",
+        path: "/userlist",
         component: () => import("@/pages/Users.vue"),
         name: "users",
         meta: { auth: true, title: "Пользователи" },

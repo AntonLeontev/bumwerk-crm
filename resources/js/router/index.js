@@ -27,8 +27,8 @@ router.beforeEach(async (to, from) => {
     }
 
 	document.title = to.meta.title
-        ? to.meta.title + " | Fiscal Hub"
-        : "Fiscal Hub";
+        ? to.meta.title + " | Bumwerk CRM"
+        : "Bumwerk CRM";
 });
 
 export default router;

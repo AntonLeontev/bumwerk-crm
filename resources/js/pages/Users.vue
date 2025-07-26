@@ -43,7 +43,7 @@
 		loading.value = true;
 
 		axios.get(
-			route('agencies.users', userStore.activeAgency.id), 
+			route('users.index'), 
 			{ params: { 
 				page, 
 				items_per_page: itemsPerPage, 
@@ -62,8 +62,7 @@
 
 	const roles = [
 		// { label: 'Администратор', value: 'admin' },
-		{ label: 'Кассир', value: 'cashier' },
-		{ label: 'Старший кассир', value: 'senior cashier' },
+		{ label: 'Менеджер по продажам', value: 'seller' },
 	];
 
 	const creating = ref(false);
@@ -81,8 +80,7 @@
 
 
 	function deleteUser() {
-		axios.delete(route('agencies.users.destroy', {
-			agency: userStore.activeAgency.id,
+		axios.delete(route('users.destroy', {
 			id: deletingItem.value.id
 		}))
 			.then(response => {
@@ -99,7 +97,7 @@
 		createForm.errors = {}
 	}
 
-	const createForm = useForm("post", route("agencies.users.create", userStore.activeAgency.id), {
+	const createForm = useForm("post", route("users.create"), {
 		email: '',
 		name: '',
 		role: null,
@@ -116,7 +114,7 @@
 
 
 	function sendInvite(user) {
-		axios.post(route('agencies.users.invite', [userStore.activeAgency.id, user.id]))
+		axios.post(route('users.invite', [user.id]))
 			.then(response => {
 				toastsStore.addSuccess('Приглашение отправлено', 2500)
 			})
@@ -248,7 +246,7 @@
 									:class="createForm.invalid('email') ? 'text-danger' : ''"
 								></v-text-field>
 								<v-text-field
-									label="Имя или название организации"
+									label="Имя"
 									variant="outlined"
 									v-model="createForm.name"
 									:hint="createForm.errors.name"

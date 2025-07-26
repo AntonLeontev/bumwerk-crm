@@ -12,7 +12,7 @@ const vuetify = createVuetify({
             light: {
                 dark: false,
                 colors: {
-                    primary: colors.green.darken2,
+                    primary: "#0166b1",
                     danger: colors.red.darken4,
                 },
             },

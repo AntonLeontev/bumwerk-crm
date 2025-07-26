@@ -7,7 +7,7 @@ import Toasts from '@/components/Toasts.vue';
 		<v-main class="justify-center d-flex align-center">
 			<div class="w-100">
 				<div class="text-center text-h3">
-					Insurance
+					Bumwerk CRM
 				</div>
 				<slot></slot>
 			</div>
