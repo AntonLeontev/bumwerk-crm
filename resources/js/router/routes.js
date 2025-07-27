@@ -19,6 +19,12 @@ export default [
         name: "users",
         meta: { auth: true, title: "Пользователи" },
     },
+    {
+        path: "/contacts-list",
+        component: () => import("@/pages/Contacts.vue"),
+        name: "contacts",
+        meta: { auth: true, title: "Контакты" },
+    },
     { path: "/login", component: Login, name: "login" },
     {
         path: "/forgot-password",

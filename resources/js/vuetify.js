@@ -4,6 +4,7 @@ import { createVuetify } from "vuetify";
 import { aliases, mdi } from "vuetify/iconsets/mdi";
 import colors from "vuetify/util/colors";
 import "@mdi/font/css/materialdesignicons.css";
+import { VMaskInput } from "vuetify/labs/VMaskInput";
 
 const vuetify = createVuetify({
     theme: {

@@ -32,6 +32,12 @@ const drawer = ref(window.innerWidth >= 1280);
 						Пользователи
 					</RouterLink>
 				</v-list-item>
+				<v-list-item>
+					<RouterLink :to="{ name: 'contacts' }" class="d-flex ga-1" :class="$route.name === 'contacts' ? 'text-primary' : ''">
+						<v-icon icon="mdi-account-group"></v-icon>
+						Контакты
+					</RouterLink>
+				</v-list-item>
 			</v-list>
 		</v-navigation-drawer>
 
