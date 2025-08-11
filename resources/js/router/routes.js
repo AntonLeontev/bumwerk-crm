@@ -25,6 +25,12 @@ export default [
         name: "contacts",
         meta: { auth: true, title: "Контакты" },
     },
+    {
+        path: "/canban/leads",
+        component: () => import("@/pages/Leads.vue"),
+        name: "leads",
+        meta: { auth: true, title: "Лиды" },
+    },
     { path: "/login", component: Login, name: "login" },
     {
         path: "/forgot-password",

@@ -38,6 +38,12 @@ const drawer = ref(window.innerWidth >= 1280);
 						Контакты
 					</RouterLink>
 				</v-list-item>
+				<v-list-item>
+					<RouterLink :to="{ name: 'leads' }" class="d-flex ga-1" :class="$route.name === 'leads' ? 'text-primary' : ''">
+						<v-icon icon="mdi-account-group"></v-icon>
+						Лиды
+					</RouterLink>
+				</v-list-item>
 			</v-list>
 		</v-navigation-drawer>
 
