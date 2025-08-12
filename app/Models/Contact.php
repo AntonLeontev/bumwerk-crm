@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\QueryBuilders\ContactQueryBuilder;
+use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+#[UseEloquentBuilder(ContactQueryBuilder::class)]
 class Contact extends Model
 {
     protected $fillable = [

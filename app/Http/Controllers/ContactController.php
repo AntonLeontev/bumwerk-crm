@@ -35,12 +35,18 @@ class ContactController extends Controller
             })
             ->when($request->has('search'), function ($query) use ($request) {
                 $query->where(function ($q) use ($request) {
-                    $phoneIds = Phone::where('number', 'like', '%'.$request->get('search').'%')->pluck('contact_id')->toArray();
-                    $emailIds = Email::where('address', 'like', '%'.$request->get('search').'%')->pluck('contact_id')->toArray();
-                    $nameIds = Contact::where('name', 'like', '%'.$request->get('search').'%')
-                        ->orWhere('surname', 'like', '%'.$request->get('search').'%')
-                        ->orWhere('patronymic', 'like', '%'.$request->get('search').'%')
-                        ->pluck('id')->toArray();
+                    $term = (string) $request->get('search');
+
+                    // Поиск по телефону и email
+                    $phoneIds = Phone::where('number', 'like', '%'.$term.'%')->pluck('contact_id')->toArray();
+                    $emailIds = Email::where('address', 'like', '%'.$term.'%')->pluck('contact_id')->toArray();
+
+                    // Поиск по ФИО с использованием существующего индекса (fulltext/BTREE)
+                    $nameIds = Contact::query()
+                        ->select('id')
+                        ->searchByName($term)
+                        ->pluck('id')
+                        ->toArray();
 
                     $q->whereIn('id', array_merge($phoneIds, $emailIds, $nameIds));
                 });
@@ -63,18 +69,19 @@ class ContactController extends Controller
 
     public function store(ContactStoreRequest $request)
     {
-        $contact = Contact::create(Arr::except($request->validated(), ['phone', 'email']));
+        $validated = $request->validated();
+        $contact = Contact::create(Arr::except($validated, ['phone', 'email']));
 
-        if ($request->has('phone') && $request->get('phone') !== null) {
+        if (array_key_exists('phone', $validated) && $validated['phone'] !== null) {
             Phone::create([
-                'number' => $request->validated('phone'),
+                'number' => $validated['phone'],
                 'contact_id' => $contact->id,
             ]);
         }
 
-        if ($request->has('email') && $request->get('email') !== null) {
+        if (array_key_exists('email', $validated) && $validated['email'] !== null) {
             Email::create([
-                'address' => $request->validated('email'),
+                'address' => $validated['email'],
                 'contact_id' => $contact->id,
             ]);
         }

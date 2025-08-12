@@ -7,7 +7,7 @@ const props = defineProps({
     color: {
         type: String,
         required: false,
-        default: "#000000",
+        default: "#cccccc",
     },
 });
 </script>
@@ -19,26 +19,25 @@ const props = defineProps({
         :style="{
             borderColor: color,
         }"
+		:title="lead.title"
     >
-        <v-card-title
-            class="text-sm font-medium leading-tight"
-            :title="lead.name"
-        >
-            {{ lead.name }}
-        </v-card-title>
-        <v-card-subtitle class="text-xs">
-            <div class="d-flex flex-wrap ga-2">
+        
+		<v-card-text>
+			<div class="mb-3 text-lg text-grey" v-if="lead.amount">
+				{{ lead.amount }} ₽
+			</div>
+            <div class="d-flex ga-2 justify-space-between">
                 <div class="d-flex align-center ga-1">
                     <v-icon size="small" icon="mdi-account"></v-icon>
                     <span>{{
                         lead.contact?.full_name || lead.contact?.name
                     }}</span>
                 </div>
-                <div class="d-flex align-center ga-1">
+                <div class="d-flex align-center ga-1" v-if="lead.user">
                     <v-icon size="small" icon="mdi-account-tie"></v-icon>
                     <span>{{ lead.user?.name }}</span>
                 </div>
             </div>
-        </v-card-subtitle>
+		</v-card-text>
     </v-card>
 </template>

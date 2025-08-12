@@ -23,7 +23,6 @@ function loadStatuses() {
         .get(route("lead-statuses.index"))
         .then((response) => {
             const data = response.data.filter((s) => !s.is_final);
-            // Полностью перезаписываем массив, сохраняя реактивность
             statuses.splice(0, statuses.length, ...data);
             statusesLoaded.value = true;
         })
@@ -33,156 +32,126 @@ function loadStatuses() {
 }
 
 const leadsLoaded = ref(false);
-const leads = ref([]);
+const leads = reactive([]);
+function loadLeads() {
+    axios
+        .get(route("leads.index"))
+        .then((response) => {
+            leads.splice(0, leads.length, ...response.data);
+            leadsLoaded.value = true;
+        })
+        .catch((error) => {
+            toastsStore.handleResponseError(error);
+        });
+}
 
-async function handleCreateStatusAfter(status) {
+// -----------------
+// Create lead modal
+// -----------------
+const showCreateDialog = ref(false);
+const contactsLoaded = ref(true);
+const contacts = reactive([]);
+const contactSearch = ref("");
+let contactsSearchTimeout = null;
+
+function openCreateModal() {
+    showCreateDialog.value = true;
+}
+
+function closeCreateModal() {
+    showCreateDialog.value = false;
+    createForm.reset();
+    createForm.errors = {};
+}
+
+function loadContacts() {
+    axios
+        .get(route("contacts.index"), {
+            params: {
+                items_per_page: 20,
+                search: contactSearch.value || undefined,
+            },
+        })
+        .then((response) => {
+            // Преобразуем элементы для автокомплита: заголовок + доп. описание
+            const items = response.data.data.map((c) => ({
+                ...c,
+                title: c.title,
+                subtitle: [c.phone, c.email].filter(Boolean).join(" • "),
+            }));
+            contacts.splice(0, contacts.length, ...items);
+            contactsLoaded.value = true;
+        })
+        .catch((error) => toastsStore.handleResponseError(error));
+}
+
+function handleContactSearch(val) {
+    contactSearch.value = val;
+    // Дебаунс + минимальная длина 3 символа
+    if (contactsSearchTimeout) clearTimeout(contactsSearchTimeout);
+    // Если меньше 3 символов — очищаем список и ничего не грузим
+    if (!val || val.length < 3) {
+        contacts.length = 0;
+        contactsLoaded.value = true;
+        return;
+    }
+    contactsLoaded.value = false;
+    contactsSearchTimeout = setTimeout(() => {
+        loadContacts();
+    }, 350);
+}
+
+const createForm = useForm("post", route("leads.store"), {
+    title: "",
+    description: "",
+    amount: null,
+    contact_id: null,
+    status_id: null,
+});
+
+watch(statuses, (val) => {
+    if (val?.length && !createForm.status_id) {
+        createForm.status_id = val[0].id;
+    }
+}, { immediate: true });
+
+function submitCreateLead() {
+    createForm
+        .submit()
+        .then((response) => {
+            leads.unshift(response.data);
+            closeCreateModal();
+        })
+        .catch((error) => toastsStore.handleResponseError(error));
+}
+
+function handleCreateStatusAfter(status) {
 	if (statuses.length >= 250) {
 		toastsStore.addError('Достигнуто максимальное количество статусов');
 		return;
 	}
 
-    try {
-        const response = await axios.post(route("lead-statuses.store"), {
-            name: "Новый статус",
-            position: status.position + 1,
-        });
-        // Обновляем список статусов, чтобы появился новый
-        await loadStatuses();
-    } catch (error) {
+    axios.post(route("lead-statuses.store"), {
+        name: "Новый статус",
+        position: status.position + 1,
+    })
+    .then(() => {
+        loadStatuses();
+    })
+    .catch((error) => {
         toastsStore.handleResponseError(error);
-    }
+    });
 }
 
 onMounted(() => {
     loadStatuses();
+	loadLeads();
 });
-
-// const leads = ref([
-//     {
-//         id: 101,
-//         name: "Разработка лендинга лендинга лендинга лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 2,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 101,
-//         name: "Разработка лендинга",
-//         contact: { full_name: "Иван Иванов" },
-//         user: { name: "Пётр" },
-//         status_id: 1,
-//     },
-//     {
-//         id: 102,
-//         name: "SEO для ООО Ромашка",
-//         contact: { full_name: "Мария Петрова" },
-//         user: { name: "Светлана" },
-//         status_id: 2,
-//     },
-//     {
-//         id: 103,
-//         name: "Редизайн интернет‑магазина",
-//         contact: { full_name: "Алексей Сидоров" },
-//         user: { name: "Николай" },
-//         status_id: 3,
-//     },
-//     {
-//         id: 104,
-//         name: "CRM интеграция",
-//         contact: { full_name: "ООО Бета" },
-//         user: { name: "Ирина" },
-//         status_id: 4,
-//     },
-//     {
-//         id: 105,
-//         name: "Подписка на сопровождение",
-//         contact: { full_name: "ЧП Дельта" },
-//         user: { name: "Павел" },
-//         status_id: 5,
-//     },
-// ]);
 
 const leadsByStatusId = computed(() => {
     const grouped = {};
     statuses.forEach((s) => (grouped[s.id] = []));
-    leads.value.forEach((lead) => {
+    leads.forEach((lead) => {
         if (!grouped[lead.status_id]) grouped[lead.status_id] = [];
         grouped[lead.status_id].push(lead);
     });
@@ -267,31 +236,21 @@ function handleStatusDeleted() {
                                 @status-updated="handleStatusUpdated"
                                 @status-deleted="handleStatusDeleted"
                             >
-                                <template v-if="!statusesLoaded">
-                                    <v-skeleton-loader
-                                        type="card"
-                                        class="mb-2"
-                                        v-for="n in 3"
-                                        :key="n"
-                                    />
-                                </template>
-                                <template v-else>
-                                    <Lead
-                                        v-for="lead in leadsByStatusId[status.id]"
-                                        :key="lead.id"
-                                        :lead="lead"
-                                        :color="status.color"
-                                    />
-                                    <div
-                                        v-if="
-                                            !leadsByStatusId[status.id] ||
-                                            leadsByStatusId[status.id].length === 0
-                                        "
-                                        class="text-gray-500 text-xs text-center py-4"
-                                    >
-                                        Пусто
-                                    </div>
-                                </template>
+								<Lead
+									v-for="lead in leadsByStatusId[status.id]"
+									:key="lead.id"
+									:lead="lead"
+									:color="status.color"
+								/>
+								<div
+									v-if="
+										!leadsByStatusId[status.id] ||
+										leadsByStatusId[status.id].length === 0
+									"
+									class="text-gray-500 text-xs text-center py-4"
+								>
+									Пусто
+								</div>
                             </Column>
                         </template>
                     </draggable>
@@ -300,6 +259,95 @@ function handleStatusDeleted() {
                 <!-- ------ -->
                 <!-- Modals -->
                 <!-- ------ -->
+                <v-dialog v-model="showCreateDialog" max-width="640">
+                    <v-card>
+                        <v-card-title class="text-base">Создание лида</v-card-title>
+                        <v-card-text>
+                            <v-form @submit.prevent="submitCreateLead">
+                                <div class="flex flex-col gap-3">
+                                    <v-text-field
+                                        v-model="createForm.title"
+                                        label="Название"
+                                        variant="outlined"
+                                        density="comfortable"
+                                        :error="!!createForm.errors.title"
+                                        :error-messages="createForm.errors.title"
+                                        maxlength="255"
+                                        required
+                                        clearable
+                                    />
+
+                                    <v-autocomplete
+                                        v-model="createForm.contact_id"
+                                        :items="contacts"
+                                        item-title="title"
+                                        item-value="id"
+                                        label="Контакт"
+                                        variant="outlined"
+                                        density="comfortable"
+                                        :loading="!contactsLoaded"
+                                        clearable
+                                        :error="!!createForm.errors.contact_id"
+                                        :error-messages="createForm.errors.contact_id"
+                                        @update:search="handleContactSearch"
+										:custom-filter="() => true"
+                                        no-data-text="Ничего не найдено"
+										hint="Введите минимум 3 символа для поиска"
+										:persistent-hint="true"
+										placeholder="Имя, телефон, email"
+                                    >
+                                        <template v-slot:item="{ props, item }">
+                                            <v-list-item v-bind="props"
+												:subtitle="item.raw.subtitle"
+												:title="item.raw.title"
+											/>
+                                        </template>
+                                    </v-autocomplete>
+
+                                    <v-autocomplete
+                                        v-model="createForm.status_id"
+                                        :items="statuses"
+                                        item-title="name"
+                                        item-value="id"
+                                        label="Статус"
+                                        variant="outlined"
+                                        density="comfortable"
+                                        :error="!!createForm.errors.status_id"
+                                        :error-messages="createForm.errors.status_id"
+                                        required
+                                    />
+
+                                    <v-text-field
+                                        v-model.number="createForm.amount"
+                                        label="Сумма"
+                                        type="number"
+                                        variant="outlined"
+                                        density="comfortable"
+                                        :error="!!createForm.errors.amount"
+                                        :error-messages="createForm.errors.amount"
+                                        clearable
+                                        min="0"
+                                    />
+
+                                    <v-textarea
+                                        v-model="createForm.description"
+                                        label="Описание"
+                                        variant="outlined"
+                                        density="comfortable"
+                                        :error="!!createForm.errors.description"
+                                        :error-messages="createForm.errors.description"
+                                        auto-grow
+                                        clearable
+                                    />
+                                </div>
+                            </v-form>
+                        </v-card-text>
+                        <v-card-actions class="justify-end">
+                            <v-btn variant="text" @click="closeCreateModal" :disabled="createForm.processing">Отмена</v-btn>
+                            <v-btn color="primary" :loading="createForm.processing" @click="submitCreateLead">Создать</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
             </template>
         </CrudPage>
     </AppLayout>
