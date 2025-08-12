@@ -1,4 +1,5 @@
 <script setup>
+const emit = defineEmits(['open']);
 const props = defineProps({
     lead: {
         type: Object,
@@ -20,6 +21,8 @@ const props = defineProps({
             borderColor: color,
         }"
 		:title="lead.title"
+        @click="emit('open', lead)"
+        hover
     >
         
 		<v-card-text>

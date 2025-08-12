@@ -46,6 +46,76 @@ function loadLeads() {
 }
 
 // -----------------
+// View/Edit lead modal
+// -----------------
+const showEditDialog = ref(false);
+const currentLeadId = ref(null);
+const currentLead = ref(null);
+const editForm = useForm("put", () => route("leads.update", { lead: currentLeadId.value }), {
+    title: "",
+    description: "",
+    amount: null,
+    contact_id: null,
+    status_id: null,
+});
+
+function openEditModal(lead) {
+    currentLeadId.value = lead.id;
+    showEditDialog.value = true;
+    loadLeadDetails(lead.id);
+}
+
+function closeEditModal() {
+    showEditDialog.value = false;
+    currentLeadId.value = null;
+    currentLead.value = null;
+    editForm.reset();
+    editForm.errors = {};
+}
+
+function loadLeadDetails(id) {
+    axios
+        .get(route("leads.show", { lead: id }))
+        .then((response) => {
+            currentLead.value = response.data;
+            // Заполнить форму редактирования
+            editForm.title = currentLead.value.title || "";
+            editForm.description = currentLead.value.description || "";
+            editForm.amount = currentLead.value.amount ?? null;
+            editForm.contact_id = currentLead.value.contact_id ?? null;
+            editForm.status_id = currentLead.value.status_id ?? null;
+
+            // Убедиться, что выбранный контакт отображается в списке
+            if (currentLead.value.contact) {
+                const c = currentLead.value.contact;
+                const item = {
+                    id: c.id,
+                    title: [c.surname, c.name, c.patronymic].filter(Boolean).join(' '),
+                    subtitle: [c.phone?.number, c.email?.address].filter(Boolean).join(' • '),
+                };
+                if (!contacts.find((x) => x.id === item.id)) {
+                    contacts.unshift(item);
+                }
+            }
+        })
+        .catch((error) => toastsStore.handleResponseError(error));
+}
+
+function submitEditLead() {
+    editForm
+        .submit()
+        .then((response) => {
+            // Обновить элемент в списке
+            const idx = leads.findIndex((l) => l.id === response.data.id);
+            if (idx !== -1) {
+                leads[idx] = response.data;
+            }
+            closeEditModal();
+        })
+        .catch((error) => toastsStore.handleResponseError(error));
+}
+
+// -----------------
 // Create lead modal
 // -----------------
 const showCreateDialog = ref(false);
@@ -241,6 +311,7 @@ function handleStatusDeleted() {
 									:key="lead.id"
 									:lead="lead"
 									:color="status.color"
+                                    @open="openEditModal"
 								/>
 								<div
 									v-if="
@@ -345,6 +416,134 @@ function handleStatusDeleted() {
                         <v-card-actions class="justify-end">
                             <v-btn variant="text" @click="closeCreateModal" :disabled="createForm.processing">Отмена</v-btn>
                             <v-btn color="primary" :loading="createForm.processing" @click="submitCreateLead">Создать</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+
+                <v-dialog v-model="showEditDialog" max-width="720">
+                    <v-card>
+                        <v-card-title class="text-base">{{ currentLead?.title }}</v-card-title>
+                        <v-card-text>
+                            <div v-if="!currentLead">Загрузка...</div>
+                            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <v-form @submit.prevent="submitEditLead">
+                                        <div class="flex flex-col gap-3">
+                                            <v-text-field
+                                                v-model="editForm.title"
+                                                label="Название"
+                                                variant="outlined"
+                                                density="comfortable"
+                                                :error="!!editForm.errors.title"
+                                                :error-messages="editForm.errors.title"
+                                                maxlength="255"
+                                                required
+                                                clearable
+                                            />
+
+                                            <v-autocomplete
+                                                v-model="editForm.contact_id"
+                                                :items="contacts"
+                                                item-title="title"
+                                                item-value="id"
+                                                label="Контакт"
+                                                variant="outlined"
+                                                density="comfortable"
+                                                :loading="!contactsLoaded"
+                                                clearable
+                                                :error="!!editForm.errors.contact_id"
+                                                :error-messages="editForm.errors.contact_id"
+                                                @update:search="handleContactSearch"
+                                                :custom-filter="() => true"
+                                                no-data-text="Ничего не найдено"
+                                                hint="Введите минимум 3 символа для поиска"
+                                                :persistent-hint="true"
+                                                placeholder="Имя, телефон, email"
+                                            >
+                                                <template v-slot:item="{ props, item }">
+                                                    <v-list-item v-bind="props"
+                                                        :subtitle="item.raw.subtitle"
+                                                        :title="item.raw.title"
+                                                    />
+                                                </template>
+                                            </v-autocomplete>
+
+                                            <v-autocomplete
+                                                v-model="editForm.status_id"
+                                                :items="statuses"
+                                                item-title="name"
+                                                item-value="id"
+                                                label="Статус"
+                                                variant="outlined"
+                                                density="comfortable"
+                                                :error="!!editForm.errors.status_id"
+                                                :error-messages="editForm.errors.status_id"
+                                                required
+                                            />
+
+                                            <v-text-field
+                                                v-model.number="editForm.amount"
+                                                label="Сумма"
+                                                type="number"
+                                                variant="outlined"
+                                                density="comfortable"
+                                                :error="!!editForm.errors.amount"
+                                                :error-messages="editForm.errors.amount"
+                                                clearable
+                                                min="0"
+                                            />
+
+                                            <v-textarea
+                                                v-model="editForm.description"
+                                                label="Описание"
+                                                variant="outlined"
+                                                density="comfortable"
+                                                :error="!!editForm.errors.description"
+                                                :error-messages="editForm.errors.description"
+                                                auto-grow
+                                                clearable
+                                            />
+                                        </div>
+                                    </v-form>
+                                </div>
+                                <div>
+                                    <div class="text-subtitle-2 mb-2">Контакт</div>
+                                    <v-card variant="tonal">
+                                        <v-card-text>
+                                            <div class="flex flex-col gap-1">
+                                                <div>
+                                                    <strong>Фамилия:</strong>
+                                                    {{ currentLead.contact?.surname || '—' }}
+                                                </div>
+                                                <div>
+                                                    <strong>Имя:</strong>
+                                                    {{ currentLead.contact?.name || '—' }}
+                                                </div>
+                                                <div>
+                                                    <strong>Отчество:</strong>
+                                                    {{ currentLead.contact?.patronymic || '—' }}
+                                                </div>
+                                                <div>
+                                                    <strong>Телефоны:</strong>
+                                                    {{ currentLead.contact?.phones?.map((p) => p.number).join(', ') || '—' }}
+                                                </div>
+                                                <div>
+                                                    <strong>Emails:</strong>
+                                                    {{ currentLead.contact?.emails?.map((e) => e.address).join(', ') || '—' }}
+                                                </div>
+                                                <div>
+                                                    <strong>Telegram:</strong>
+                                                    {{ currentLead.contact?.telegram || '—' }}
+                                                </div>
+                                            </div>
+                                        </v-card-text>
+                                    </v-card>
+                                </div>
+                            </div>
+                        </v-card-text>
+                        <v-card-actions class="justify-end">
+                            <v-btn variant="text" @click="closeEditModal" :disabled="editForm.processing">Отмена</v-btn>
+                            <v-btn color="primary" :loading="editForm.processing" @click="submitEditLead">Сохранить</v-btn>
                         </v-card-actions>
                     </v-card>
                 </v-dialog>
