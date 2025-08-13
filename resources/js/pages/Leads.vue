@@ -423,7 +423,7 @@ function onLeadChange(event, targetStatus) {
                 </div>
 
                 <div class="justify-start mt-3 d-flex">
-                    <v-text-field
+                    <!-- <v-text-field
                         v-model="search"
                         density="compact"
                         placeholder="Поиск"
@@ -432,7 +432,7 @@ function onLeadChange(event, targetStatus) {
                         max-width="300px"
                         append-inner-icon="mdi-magnify"
                         clearable
-                    />
+                    /> -->
                 </div>
             </template>
             <template v-slot:content>

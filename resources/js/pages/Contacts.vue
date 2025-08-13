@@ -101,11 +101,6 @@ function loadItems({ page, itemsPerPage, sortBy, search }) {
         });
 }
 
-const roles = [
-    // { label: 'Администратор', value: 'admin' },
-    { label: "Менеджер по продажам", value: "seller" },
-];
-
 const creating = ref(false);
 const deleting = ref(false);
 const deletingItem = ref(null);
@@ -134,6 +129,9 @@ function deleteUser() {
                 search: search.value,
             });
         })
+		.catch((error) => {
+			toastsStore.handleResponseError(error);
+		})
         .finally(() => {
             deleting.value = false;
         });

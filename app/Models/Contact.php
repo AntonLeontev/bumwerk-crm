@@ -39,4 +39,9 @@ class Contact extends Model
     {
         return $this->hasMany(Email::class);
     }
+
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Lead::class);
+    }
 }

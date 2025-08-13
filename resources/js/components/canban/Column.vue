@@ -1,7 +1,11 @@
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import axios from 'axios';
 import { useToastsStore } from '@/stores/toasts';
+import { useUserStore } from '@/stores/user';
+
+const userStore = useUserStore();
+const isAdmin = computed(() => userStore.user.is_admin);
 
 const props = defineProps({
     status: {
@@ -96,7 +100,7 @@ function deleteStatus() {
                         class="column-drag-handle cursor-move"
                         size="18"
                         icon="mdi-drag"
-                        v-if="status.position > 0"
+                        v-if="status.position > 0 && isAdmin"
                     />
                     <span class="truncate">
                         {{ status.name }}
@@ -111,7 +115,7 @@ function deleteStatus() {
                         class="opacity-0 group-hover:opacity-100! transition-opacity duration-150"
                         :title="'Редактировать статус ' + status.name"
                         @click.stop="openEditDialog"
-                        v-if="!status.is_final"
+                        v-if="!status.is_final && isAdmin"
                     />
                     <v-btn
                         icon="mdi-trash-can"
@@ -122,7 +126,7 @@ function deleteStatus() {
 						@click.stop="openDeleteDialog"
                         class="opacity-0 group-hover:opacity-100! transition-opacity duration-150"
                         :title="'Удалить статус ' + status.name"
-                        v-if="!status.is_final && !status.is_system"
+                        v-if="!status.is_final && !status.is_system && isAdmin"
                     />
 
 					<v-chip size="small" color="primary" variant="flat">
@@ -146,6 +150,7 @@ function deleteStatus() {
             v-if="hasNext"
         >
             <v-btn
+				v-if="isAdmin"
                 icon="mdi-plus"
                 color="primary"
                 variant="flat"

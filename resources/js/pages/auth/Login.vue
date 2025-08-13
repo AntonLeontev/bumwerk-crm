@@ -18,7 +18,7 @@
 			.then(response => {
 				userStore.setUser(response.data)
 
-				router.push({name: 'home'})
+				router.push({name: 'leads'})
 			})
 			.catch(err => {
 				console.log(err)

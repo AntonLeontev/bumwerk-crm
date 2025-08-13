@@ -101,6 +101,10 @@ class ContactController extends Controller
 
     public function destroy(Contact $contact)
     {
+        if ($contact->leads()->exists()) {
+            return response()->json(['message' => 'Нельзя удалить контакт, у которого есть лиды'], 400);
+        }
+
         $contact->delete();
     }
 }
