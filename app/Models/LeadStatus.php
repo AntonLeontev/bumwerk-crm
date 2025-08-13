@@ -13,11 +13,17 @@ class LeadStatus extends Model
         'position',
         'is_final',
         'is_system',
+        'is_start',
+        'is_win',
+        'is_loose',
     ];
 
     protected $casts = [
         'is_final' => 'boolean',
         'is_system' => 'boolean',
+        'is_start' => 'boolean',
+        'is_win' => 'boolean',
+        'is_loose' => 'boolean',
     ];
 
     public function leads(): HasMany

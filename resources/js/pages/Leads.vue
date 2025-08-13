@@ -17,14 +17,17 @@ import { useToastsStore } from "@/stores/toasts";
 const toastsStore = useToastsStore();
 
 const statusesLoaded = ref(false);
+const allStatuses = [];
 const statuses = reactive([]);
 function loadStatuses() {
     axios
         .get(route("lead-statuses.index"))
         .then((response) => {
-            // const data = response.data.filter((s) => !s.is_final);
-            statuses.splice(0, statuses.length, ...response.data);
+            const data = response.data.filter((s) => !s.is_final);
+            allStatuses.splice(0, allStatuses.length, ...response.data);
+            statuses.splice(0, statuses.length, ...data);
             statusesLoaded.value = true;
+			loadLeads();
         })
         .catch((error) => {
             toastsStore.handleResponseError(error);
@@ -35,7 +38,7 @@ const leadsLoaded = ref(false);
 const leads = reactive([]);
 function loadLeads() {
     axios
-        .get(route("leads.index"))
+        .get(route("leads.index", { statuses: statuses.map((s) => s.id) }))
         .then((response) => {
             leads.splice(0, leads.length, ...response.data);
             leadsLoaded.value = true;
@@ -285,7 +288,6 @@ function handleCreateStatusAfter(status) {
 
 onMounted(() => {
     loadStatuses();
-	loadLeads();
 });
 
 const leadsByStatusId = computed(() => {
@@ -652,7 +654,7 @@ function onLeadChange(event, targetStatus) {
 
                                             <v-autocomplete
                                                 v-model="editForm.status_id"
-                                                :items="statuses"
+                                                :items="allStatuses"
                                                 item-title="name"
                                                 item-value="id"
                                                 label="Статус"
@@ -661,7 +663,18 @@ function onLeadChange(event, targetStatus) {
                                                 :error="!!editForm.errors.status_id"
                                                 :error-messages="editForm.errors.status_id"
                                                 required
-                                            />
+                                            >
+											<template v-slot:item="{ props, item }">
+                                                    <v-list-item v-bind="props"
+                                                        :title="item.raw.name"
+                                                    >
+														<template v-slot:prepend>
+															<v-icon icon="mdi-check" size="small" v-if="item.raw.is_win" color="success" />
+															<v-icon icon="mdi-close" size="small" v-if="item.raw.is_loose" color="error" />
+														</template>
+													</v-list-item>
+                                                </template>
+                                            </v-autocomplete>
 
                                             <v-autocomplete
                                                 v-model="editForm.user_id"

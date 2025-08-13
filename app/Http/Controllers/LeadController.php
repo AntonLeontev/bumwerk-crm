@@ -15,6 +15,9 @@ class LeadController extends Controller
     public function index(): JsonResponse
     {
         $leads = Lead::with('contact', 'user', 'status')
+            ->when(request()->has('statuses'), function ($query) {
+                $query->whereIn('status_id', request()->get('statuses'));
+            })
             ->orderBy('status_id')
             ->orderBy('position')
             ->orderByDesc('created_at')

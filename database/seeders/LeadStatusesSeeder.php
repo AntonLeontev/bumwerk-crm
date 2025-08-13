@@ -18,22 +18,31 @@ class LeadStatusesSeeder extends Seeder
             'position' => 0,
             'is_final' => false,
             'is_system' => true,
+            'is_start' => true,
+            'is_win' => false,
+            'is_loose' => false,
         ]);
 
         LeadStatus::create([
             'name' => 'Успешно завершено',
-            'color' => '#0000003a',
+            'color' => '#22c55e',
             'position' => 255,
             'is_final' => true,
             'is_system' => true,
+            'is_start' => false,
+            'is_win' => true,
+            'is_loose' => false,
         ]);
 
         LeadStatus::create([
             'name' => 'Отказ',
-            'color' => '#0000003a',
+            'color' => '#EF5350',
             'position' => 255,
             'is_final' => true,
             'is_system' => true,
+            'is_start' => false,
+            'is_win' => false,
+            'is_loose' => true,
         ]);
 
         LeadStatus::create([
