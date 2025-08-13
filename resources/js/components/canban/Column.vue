@@ -5,7 +5,7 @@ import { useToastsStore } from '@/stores/toasts';
 import { useUserStore } from '@/stores/user';
 
 const userStore = useUserStore();
-const isAdmin = computed(() => userStore.user.is_admin);
+const isAdmin = computed(() => userStore.user.role === 'admin');
 
 const props = defineProps({
     status: {
