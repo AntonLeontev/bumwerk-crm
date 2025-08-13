@@ -36,6 +36,53 @@ const editForm = reactive({
     color: '#22c55e',
 });
 
+// Возвращает контрастный цвет текста (чёрный/белый) для заданного фона
+const statusTextColor = computed(() => {
+    const background = props.status?.color || '#ffffff';
+    return getContrastTextColor(background);
+});
+
+function getContrastTextColor(color) {
+    const { r, g, b } = parseToRgb(color);
+    // YIQ — быстрая эвристика контраста
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 186 ? '#000000' : '#ffffff';
+}
+
+function parseToRgb(input) {
+    if (!input) return { r: 255, g: 255, b: 255 };
+
+    // HEX: #RRGGBB или #RGB
+    const hexMatch = String(input).trim().match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+    if (hexMatch) {
+        let hex = hexMatch[1];
+        if (hex.length === 3) {
+            hex = hex.split('').map((c) => c + c).join('');
+        }
+        const intVal = parseInt(hex, 16);
+        return {
+            r: (intVal >> 16) & 255,
+            g: (intVal >> 8) & 255,
+            b: intVal & 255,
+        };
+    }
+
+    // rgb() или rgba()
+    const rgbMatch = String(input)
+        .trim()
+        .match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|0?\.\d+|1))?\s*\)$/);
+    if (rgbMatch) {
+        return {
+            r: Math.max(0, Math.min(255, Number(rgbMatch[1]))),
+            g: Math.max(0, Math.min(255, Number(rgbMatch[2]))),
+            b: Math.max(0, Math.min(255, Number(rgbMatch[3]))),
+        };
+    }
+
+    // Фоллбек — белый
+    return { r: 255, g: 255, b: 255 };
+}
+
 watch(
     () => props.status,
     (s) => {
@@ -92,6 +139,7 @@ function deleteStatus() {
                 class="text-sm md:text-base d-flex align-center justify-between ga-1 group"
                 :style="{
                     backgroundColor: status.color,
+                    color: statusTextColor,
                 }"
                 :title="status.name"
             >

@@ -22,8 +22,8 @@ function loadStatuses() {
     axios
         .get(route("lead-statuses.index"))
         .then((response) => {
-            const data = response.data.filter((s) => !s.is_final);
-            statuses.splice(0, statuses.length, ...data);
+            // const data = response.data.filter((s) => !s.is_final);
+            statuses.splice(0, statuses.length, ...response.data);
             statusesLoaded.value = true;
         })
         .catch((error) => {
