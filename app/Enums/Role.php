@@ -14,4 +14,12 @@ enum Role: string
             self::SELLER => 'Менеджер по продажам',
         };
     }
+
+    public static function stringCases(): array
+    {
+        return [
+            self::ADMIN->value,
+            self::SELLER->value,
+        ];
+    }
 }

@@ -24,7 +24,7 @@ class CreateUser extends Command
         $email = $this->ask('Email');
         $name = $this->ask('Name');
         $password = $this->ask('Password');
-        $role = $this->choice('Role', Role::cases());
+        $role = $this->choice('Role', Role::stringCases());
 
         $user = User::create([
             'email' => $email,
