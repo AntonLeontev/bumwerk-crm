@@ -20,6 +20,7 @@ class LeadStoreRequest extends FormRequest
             'amount' => ['nullable', 'integer', 'min:0'],
             'contact_id' => ['required', 'exists:contacts,id'],
             'status_id' => ['required', 'exists:lead_statuses,id'],
+            'user_id' => ['nullable', 'exists:users,id'],
         ];
     }
 
@@ -31,6 +32,7 @@ class LeadStoreRequest extends FormRequest
             'amount' => 'Сумма',
             'contact_id' => 'Контакт',
             'status_id' => 'Статус',
+            'user_id' => 'Ответственный',
         ];
     }
 }

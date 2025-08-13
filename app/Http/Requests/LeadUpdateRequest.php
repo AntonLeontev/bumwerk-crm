@@ -12,11 +12,7 @@ class LeadUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        if ($this->route('lead')->user_id === null) {
-            return Auth::check();
-        }
-
-        return $this->route('lead')->user_id === Auth::id();
+        return Auth::check();
     }
 
     /**

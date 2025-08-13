@@ -30,13 +30,13 @@ const props = defineProps({
 				{{ lead.amount }} ₽
 			</div>
             <div class="d-flex ga-2 justify-space-between">
-                <div class="d-flex align-center ga-1">
+                <div class="d-flex align-center ga-1" title="Контакт">
                     <v-icon size="small" icon="mdi-account"></v-icon>
                     <span>{{
-                        lead.contact?.full_name || lead.contact?.name
+                        lead.contact?.full_name || `${lead.contact?.name} ${lead.contact?.surname}`
                     }}</span>
                 </div>
-                <div class="d-flex align-center ga-1" v-if="lead.user">
+                <div class="d-flex align-center ga-1" v-if="lead.user" title="Ответственный менеджер">
                     <v-icon size="small" icon="mdi-account-tie"></v-icon>
                     <span>{{ lead.user?.name }}</span>
                 </div>

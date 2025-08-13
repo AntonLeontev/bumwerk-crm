@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LeadSaveNewOrderRequest;
 use App\Http\Requests\LeadStoreRequest;
 use App\Http\Requests\LeadUpdateRequest;
 use App\Models\Lead;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -36,7 +36,7 @@ class LeadController extends Controller
             'contact_id' => $validated['contact_id'] ?? null,
             'status_id' => $validated['status_id'],
             'position' => $nextPosition,
-            'user_id' => Auth::id(),
+            'user_id' => $validated['user_id'] ?? Auth::id(),
         ]);
 
         return response()->json($lead->load('contact', 'user', 'status'), 201);
@@ -77,23 +77,34 @@ class LeadController extends Controller
         return response()->json(['message' => 'Deleted']);
     }
 
-    public function saveNewOrder(Request $request): JsonResponse
+    public function saveNewOrder(LeadSaveNewOrderRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'columns' => ['required', 'array'],
-            'columns.*.status_id' => ['required', 'integer', 'exists:lead_statuses,id'],
-            'columns.*.ids' => ['nullable', 'array'],
-            'columns.*.ids.*' => ['integer', 'exists:leads,id'],
-        ]);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($validated) {
             foreach ($validated['columns'] as $column) {
                 $position = 1;
-                foreach ($column['ids'] as $leadId) {
-                    Lead::where('id', $leadId)->update([
+                foreach (($column['ids'] ?? []) as $leadId) {
+                    $lead = Lead::find($leadId);
+
+                    $updateData = [
                         'status_id' => $column['status_id'],
                         'position' => $position,
-                    ]);
+                    ];
+
+                    if (
+                        $lead &&
+                        $lead->user_id === null &&
+                        (int) $lead->status_id === 1 &&
+                        (int) $column['status_id'] !== (int) $lead->status_id
+                    ) {
+                        $updateData['user_id'] = Auth::id();
+                    }
+
+                    if ($lead) {
+                        $lead->update($updateData);
+                    }
+
                     $position++;
                 }
             }

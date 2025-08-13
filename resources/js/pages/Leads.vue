@@ -57,6 +57,7 @@ const editForm = useForm("put", () => route("leads.update", { lead: currentLeadI
     amount: null,
     contact_id: null,
     status_id: null,
+    user_id: null,
 });
 
 function openEditModal(lead) {
@@ -84,6 +85,7 @@ function loadLeadDetails(id) {
             editForm.amount = currentLead.value.amount ?? null;
             editForm.contact_id = currentLead.value.contact_id ?? null;
             editForm.status_id = currentLead.value.status_id ?? null;
+            editForm.user_id = currentLead.value.user_id ?? null;
 
             // Убедиться, что выбранный контакт отображается в списке
             if (currentLead.value.contact) {
@@ -95,6 +97,19 @@ function loadLeadDetails(id) {
                 };
                 if (!contacts.find((x) => x.id === item.id)) {
                     contacts.unshift(item);
+                }
+            }
+
+            // Убедиться, что выбранный ответственный отображается в списке
+            if (currentLead.value.user) {
+                const u = currentLead.value.user;
+                const uItem = {
+                    id: u.id,
+                    title: u.name,
+                    subtitle: u.email,
+                };
+                if (!users.find((x) => x.id === uItem.id)) {
+                    users.unshift(uItem);
                 }
             }
         })
@@ -124,8 +139,26 @@ const contacts = reactive([]);
 const contactSearch = ref("");
 let contactsSearchTimeout = null;
 
+// Users async search state
+const usersLoaded = ref(true);
+const users = reactive([]);
+const userSearch = ref("");
+let usersSearchTimeout = null;
+
 function openCreateModal() {
     showCreateDialog.value = true;
+    // префилл ответственного текущим пользователем
+    if (userStore.user?.id) {
+        createForm.user_id = userStore.user.id;
+        const item = {
+            id: userStore.user.id,
+            title: userStore.user.name,
+            subtitle: userStore.user.email,
+        };
+        if (!users.find((x) => x.id === item.id)) {
+            users.unshift(item);
+        }
+    }
 }
 
 function closeCreateModal() {
@@ -171,12 +204,49 @@ function handleContactSearch(val) {
     }, 350);
 }
 
+function loadUsers() {
+    axios
+        .get(route("users.index"), {
+            params: {
+                items_per_page: 20,
+                search: userSearch.value || undefined,
+            },
+        })
+        .then((response) => {
+            const items = response.data.data.map((u) => ({
+                ...u,
+                title: u.name,
+                subtitle: u.email,
+            }));
+            users.splice(0, users.length, ...items);
+            usersLoaded.value = true;
+        })
+        .catch((error) => toastsStore.handleResponseError(error));
+}
+
+function handleUserSearch(val) {
+    userSearch.value = val;
+    // Дебаунс + минимальная длина 3 символа
+    if (usersSearchTimeout) clearTimeout(usersSearchTimeout);
+    // Если меньше 3 символов — очищаем список и ничего не грузим
+    if (!val || val.length < 3) {
+        users.length = 0;
+        usersLoaded.value = true;
+        return;
+    }
+    usersLoaded.value = false;
+    usersSearchTimeout = setTimeout(() => {
+        loadUsers();
+    }, 350);
+}
+
 const createForm = useForm("post", route("leads.store"), {
     title: "",
     description: "",
     amount: null,
     contact_id: null,
     status_id: null,
+    user_id: null,
 });
 
 watch(statuses, (val) => {
@@ -473,6 +543,33 @@ function onLeadChange(event, targetStatus) {
                                         required
                                     />
 
+                                    <v-autocomplete
+                                        v-model="createForm.user_id"
+                                        :items="users"
+                                        item-title="title"
+                                        item-value="id"
+                                        label="Ответственный"
+                                        variant="outlined"
+                                        density="comfortable"
+                                        :loading="!usersLoaded"
+                                        clearable
+                                        :error="!!createForm.errors.user_id"
+                                        :error-messages="createForm.errors.user_id"
+                                        @update:search="handleUserSearch"
+                                        :custom-filter="() => true"
+                                        no-data-text="Ничего не найдено"
+                                        hint="Введите минимум 3 символа для поиска"
+                                        :persistent-hint="true"
+                                        placeholder="Имя или email"
+                                    >
+                                        <template v-slot:item="{ props, item }">
+                                            <v-list-item v-bind="props"
+                                                :subtitle="item.raw.subtitle"
+                                                :title="item.raw.title"
+                                            />
+                                        </template>
+                                    </v-autocomplete>
+
                                     <v-text-field
                                         v-model.number="createForm.amount"
                                         label="Сумма"
@@ -565,6 +662,33 @@ function onLeadChange(event, targetStatus) {
                                                 :error-messages="editForm.errors.status_id"
                                                 required
                                             />
+
+                                            <v-autocomplete
+                                                v-model="editForm.user_id"
+                                                :items="users"
+                                                item-title="title"
+                                                item-value="id"
+                                                label="Ответственный"
+                                                variant="outlined"
+                                                density="comfortable"
+                                                :loading="!usersLoaded"
+                                                clearable
+                                                :error="!!editForm.errors.user_id"
+                                                :error-messages="editForm.errors.user_id"
+                                                @update:search="handleUserSearch"
+                                                :custom-filter="() => true"
+                                                no-data-text="Ничего не найдено"
+                                                hint="Введите минимум 3 символа для поиска"
+                                                :persistent-hint="true"
+                                                placeholder="Имя или email"
+                                            >
+                                                <template v-slot:item="{ props, item }">
+                                                    <v-list-item v-bind="props"
+                                                        :subtitle="item.raw.subtitle"
+                                                        :title="item.raw.title"
+                                                    />
+                                                </template>
+                                            </v-autocomplete>
 
                                             <v-text-field
                                                 v-model.number="editForm.amount"
