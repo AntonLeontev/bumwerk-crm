@@ -174,7 +174,7 @@ const submitCreateForm = () =>
         <CrudPage>
             <template v-slot:header>
                 <div class="justify-between d-flex">
-                    <H1>Пользователи</H1>
+                    <H1>Контакты</H1>
 
                     <div class="d-flex ga-2">
                         <v-btn
