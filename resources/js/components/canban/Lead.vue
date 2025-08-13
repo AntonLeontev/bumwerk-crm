@@ -16,7 +16,7 @@ const props = defineProps({
 <template>
     <v-card
         variant="outlined"
-        class="hover:shadow-sm transition-shadow"
+        class="hover:shadow-sm transition-shadow shrink-0"
         :style="{
             borderColor: color,
         }"

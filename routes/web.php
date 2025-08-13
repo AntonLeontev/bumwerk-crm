@@ -46,6 +46,7 @@ Route::controller(LeadController::class)->group(function () {
     Route::get('leads/{lead}', 'show')->name('leads.show');
     Route::put('leads/{lead}', 'update')->name('leads.update');
     Route::delete('leads/{lead}', 'destroy')->name('leads.destroy');
+    Route::post('leads/save-new-order', 'saveNewOrder')->name('leads.save-new-order');
 });
 
 Route::controller(LeadStatusController::class)->group(function () {

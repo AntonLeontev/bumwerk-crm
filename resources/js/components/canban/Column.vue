@@ -132,9 +132,9 @@ function deleteStatus() {
             </v-card-title>
             <v-divider />
             <v-card-text
-                class="p-2 flex-1 overflow-y-auto min-h-0 h-[calc(100%-48px)]"
+                class="p-2 flex-1 overflow-x-hidden min-h-0 h-[calc(100%-48px)]"
             >
-                <div class="flex flex-col gap-2 pr-1">
+                <div class="flex flex-col gap-2 h-full overflow-x-hidden">
                     <slot />
                 </div>
             </v-card-text>

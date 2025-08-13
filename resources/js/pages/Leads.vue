@@ -225,6 +225,17 @@ const leadsByStatusId = computed(() => {
         if (!grouped[lead.status_id]) grouped[lead.status_id] = [];
         grouped[lead.status_id].push(lead);
     });
+    // сортируем внутри статусов по position, затем по created_at убыв.
+    Object.keys(grouped).forEach((key) => {
+        grouped[key].sort((a, b) => {
+            if ((a.position ?? 0) !== (b.position ?? 0)) {
+                return (a.position ?? 0) - (b.position ?? 0);
+            }
+            const aCreated = new Date(a.created_at).getTime();
+            const bCreated = new Date(b.created_at).getTime();
+            return bCreated - aCreated;
+        });
+    });
     return grouped;
 });
 
@@ -249,6 +260,78 @@ function handleStatusUpdated() {
 }
 function handleStatusDeleted() {
     loadStatuses();
+}
+
+function onLeadChange(event, targetStatus) {
+    if (!event) return;
+
+    // Игнорируем чисто source-событие удаления, обработаем на целевой колонке
+    if (event.removed && !event.added && !event.moved) {
+        return;
+    }
+
+    // Сформировать текущие массивы id по статусам
+    const mapStatusToIds = {};
+    statuses.forEach((s) => {
+        mapStatusToIds[s.id] = (leadsByStatusId.value[s.id] || []).map((l) => l.id);
+    });
+
+    if (event.added && !event.moved) {
+        // Перенос между колонками (обрабатываем на целевой колонке)
+        const movedLead = event.added.element;
+        const sourceStatusId = movedLead.status_id;
+        const targetStatusId = targetStatus.id;
+
+        // Удаляем из источника (без знания индекса просто фильтруем)
+        mapStatusToIds[sourceStatusId] = (mapStatusToIds[sourceStatusId] || []).filter(
+            (id) => id !== movedLead.id
+        );
+
+        // Вставляем в цель по новому индексу
+        const dstCopy = mapStatusToIds[targetStatusId].slice();
+        dstCopy.splice(event.added.newIndex, 0, movedLead.id);
+        mapStatusToIds[targetStatusId] = dstCopy;
+
+        // Локально обновим статус у лида
+        const idx = leads.findIndex((l) => l.id === movedLead.id);
+        if (idx !== -1) {
+            leads[idx] = { ...leads[idx], status_id: targetStatusId };
+        }
+    }
+
+    // Пересчитаем позиции и локально обновим их
+    const affectedStatusIds = new Set();
+    if (event.moved) affectedStatusIds.add(targetStatus.id);
+    if (event.added && !event.moved) {
+        affectedStatusIds.add(targetStatus.id);
+        const movedLead = event.added.element;
+        if (movedLead?.status_id) {
+            affectedStatusIds.add(movedLead.status_id);
+        }
+    }
+
+    affectedStatusIds.forEach((statusId) => {
+        const ids = mapStatusToIds[statusId] || [];
+        ids.forEach((leadId, index) => {
+            const li = leads.findIndex((l) => l.id === leadId);
+            if (li !== -1) {
+                leads[li] = { ...leads[li], position: index + 1, status_id: statusId };
+            }
+        });
+    });
+
+    // Отправим только измененные колонки
+    const payload = {
+        columns: Array.from(affectedStatusIds).map((statusId) => ({
+            status_id: statusId,
+            ids: mapStatusToIds[statusId] || [],
+        })),
+    };
+
+    axios
+        .post(route('leads.save-new-order'), payload)
+        .then(() => {})
+        .catch((error) => toastsStore.handleResponseError(error));
 }
 </script>
 
@@ -306,23 +389,25 @@ function handleStatusDeleted() {
                                 @status-updated="handleStatusUpdated"
                                 @status-deleted="handleStatusDeleted"
                             >
-								<Lead
-									v-for="lead in leadsByStatusId[status.id]"
-									:key="lead.id"
-									:lead="lead"
-									:color="status.color"
-                                    @open="openEditModal"
-								/>
-								<div
-									v-if="
-										!leadsByStatusId[status.id] ||
-										leadsByStatusId[status.id].length === 0
-									"
-									class="text-gray-500 text-xs text-center py-4"
-								>
-									Пусто
-								</div>
-                            </Column>
+							<draggable
+								class="flex flex-col gap-2 h-full pr-2"
+								:list="leadsByStatusId[status.id]"
+								item-key="id"
+								group="leads"
+								ghost-class="opacity-50"
+								:animation="200"
+								:sort="true"
+								@change="(e) => onLeadChange(e, status)"
+							>
+								<template #item="{ element }">
+									<Lead
+										:lead="element"
+										:color="status.color"
+                                        @open="openEditModal"
+									/>
+								</template>
+							</draggable>
+						</Column>
                         </template>
                     </draggable>
                 </div>

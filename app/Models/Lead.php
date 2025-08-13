@@ -18,6 +18,7 @@ class Lead extends Model
         'contact_id',
         'user_id',
         'status_id',
+        'position',
     ];
 
     public function contact(): BelongsTo
