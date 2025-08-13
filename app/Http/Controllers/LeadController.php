@@ -50,16 +50,7 @@ class LeadController extends Controller
 
     public function update(LeadUpdateRequest $request, Lead $lead): JsonResponse
     {
-        $validated = $request->validated();
-
-        $lead->fill([
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'amount' => $validated['amount'] ?? null,
-            'contact_id' => $validated['contact_id'] ?? null,
-            'status_id' => $validated['status_id'],
-        ]);
-        $lead->save();
+        $lead->update($request->validated());
 
         return response()->json($lead->load('contact', 'user', 'status'));
     }

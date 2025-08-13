@@ -12,7 +12,11 @@ class LeadUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Auth::check();
+        if ($this->route('lead')->user_id === null) {
+            return Auth::check();
+        }
+
+        return $this->route('lead')->user_id === Auth::id();
     }
 
     /**
@@ -23,11 +27,12 @@ class LeadUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'amount' => ['nullable', 'integer', 'min:0'],
-            'contact_id' => ['required', 'exists:contacts,id'],
-            'status_id' => ['required', 'exists:lead_statuses,id'],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'amount' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'contact_id' => ['sometimes', 'required', 'exists:contacts,id'],
+            'status_id' => ['sometimes', 'required', 'exists:lead_statuses,id'],
+            'user_id' => ['sometimes', 'required', 'exists:users,id'],
         ];
     }
 
@@ -39,6 +44,7 @@ class LeadUpdateRequest extends FormRequest
             'amount' => 'Сумма',
             'contact_id' => 'Контакт',
             'status_id' => 'Статус',
+            'user_id' => 'Ответственный',
         ];
     }
 }
