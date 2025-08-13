@@ -17,10 +17,7 @@ class ContactController extends Controller
             ? Contact::count()
             : $request->get('items_per_page');
 
-        // $usersIds = Contact::pluck('id')->toArray();
-
         $contacts = Contact::select(['id', 'telegram', 'name', 'surname', 'patronymic'])
-            // ->whereIn('id', $usersIds)
             ->with([
                 'phone' => fn ($q) => $q->select('number', 'contact_id'),
                 'email' => fn ($q) => $q->select('address', 'contact_id'),
@@ -34,22 +31,7 @@ class ContactController extends Controller
                 $query->orderBy('id', 'desc');
             })
             ->when($request->has('search'), function ($query) use ($request) {
-                $query->where(function ($q) use ($request) {
-                    $term = (string) $request->get('search');
-
-                    // Поиск по телефону и email
-                    $phoneIds = Phone::where('number', 'like', '%'.$term.'%')->pluck('contact_id')->toArray();
-                    $emailIds = Email::where('address', 'like', '%'.$term.'%')->pluck('contact_id')->toArray();
-
-                    // Поиск по ФИО с использованием существующего индекса (fulltext/BTREE)
-                    $nameIds = Contact::query()
-                        ->select('id')
-                        ->searchByName($term)
-                        ->pluck('id')
-                        ->toArray();
-
-                    $q->whereIn('id', array_merge($phoneIds, $emailIds, $nameIds));
-                });
+                $query->search($request->get('search'));
             })
             ->paginate($paginationSize);
 

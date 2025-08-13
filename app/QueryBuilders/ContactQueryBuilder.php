@@ -2,11 +2,30 @@
 
 namespace App\QueryBuilders;
 
+use App\Models\Contact;
+use App\Models\Email;
+use App\Models\Phone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class ContactQueryBuilder extends Builder
 {
+    public function search(string $term): self
+    {
+        // Поиск по телефону и email
+        $phoneIds = Phone::where('number', 'like', '%'.$term.'%')->pluck('contact_id')->toArray();
+        $emailIds = Email::where('address', 'like', '%'.$term.'%')->pluck('contact_id')->toArray();
+
+        // Поиск по ФИО с использованием существующего индекса (fulltext/BTREE)
+        $nameIds = Contact::query()
+            ->select('id')
+            ->searchByName($term)
+            ->pluck('id')
+            ->toArray();
+
+        return $this->whereIn('id', array_merge($phoneIds, $emailIds, $nameIds));
+    }
+
     public function searchByName(string $term): self
     {
         $term = trim($term);
