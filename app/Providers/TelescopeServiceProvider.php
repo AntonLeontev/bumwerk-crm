@@ -21,6 +21,14 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         $isLocal = $this->app->environment('local');
 
         Telescope::filter(function (IncomingEntry $entry) use ($isLocal) {
+            if ($entry->type === 'request') {
+                $uri = $entry->content['uri'] ?? '';
+                $path = parse_url($uri, PHP_URL_PATH);
+                if ($path === '/leads') {
+                    return false;
+                }
+            }
+
             return $isLocal ||
                    $entry->isReportableException() ||
                    $entry->isFailedRequest() ||

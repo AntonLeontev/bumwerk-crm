@@ -53,6 +53,7 @@ class LeadController extends Controller
             'contact.emails',
             'user',
             'status',
+            'comments' => fn ($q) => $q->with('user')->orderBy('created_at', 'asc'),
         ]);
 
         return response()->json($lead);

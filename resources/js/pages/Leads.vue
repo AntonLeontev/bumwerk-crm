@@ -8,6 +8,7 @@ import { ref, reactive, watch, onMounted, computed } from "vue";
 import { useForm } from "laravel-precognition-vue";
 import axios from "axios";
 import draggable from "vuedraggable";
+import { useDate } from 'vuetify'
 import { vMaska } from "maska/vue";
 
 import { useUserStore } from "@/stores/user";
@@ -15,6 +16,8 @@ const userStore = useUserStore();
 
 import { useToastsStore } from "@/stores/toasts";
 const toastsStore = useToastsStore();
+
+const date = useDate();
 
 const statusesLoaded = ref(false);
 const allStatuses = [];
@@ -54,6 +57,8 @@ function loadLeads() {
 const showEditDialog = ref(false);
 const currentLeadId = ref(null);
 const currentLead = ref(null);
+const comments = reactive([]);
+const commentsContainer = ref(null);
 const editForm = useForm("put", () => route("leads.update", { lead: currentLeadId.value }), {
     title: "",
     description: "",
@@ -73,6 +78,7 @@ function closeEditModal() {
     showEditDialog.value = false;
     currentLeadId.value = null;
     currentLead.value = null;
+    comments.splice(0, comments.length);
     editForm.reset();
     editForm.errors = {};
 }
@@ -114,6 +120,18 @@ function loadLeadDetails(id) {
                 if (!users.find((x) => x.id === uItem.id)) {
                     users.unshift(uItem);
                 }
+            }
+
+            // Загрузить комментарии
+            if (currentLead.value.comments) {
+                comments.splice(0, comments.length, ...currentLead.value.comments);
+                // Прокрутить к последним комментариям
+                setTimeout(() => {
+					console.log(commentsContainer.value);
+					if (commentsContainer.value) {
+                        commentsContainer.value.scrollTop = commentsContainer.value.scrollHeight;
+                    }
+                }, 100);
             }
         })
         .catch((error) => toastsStore.handleResponseError(error));
@@ -288,6 +306,13 @@ function handleCreateStatusAfter(status) {
 
 onMounted(() => {
     loadStatuses();
+
+	setInterval(() => {
+		loadLeads();
+	}, 10000);
+
+	console.log(commentsContainer.value);
+	
 });
 
 const leadsByStatusId = computed(() => {
@@ -714,23 +739,11 @@ function onLeadChange(event, targetStatus) {
                                                 clearable
                                                 min="0"
                                             />
-
-                                            <v-textarea
-                                                v-model="editForm.description"
-                                                label="Описание"
-                                                variant="outlined"
-                                                density="comfortable"
-                                                :error="!!editForm.errors.description"
-                                                :error-messages="editForm.errors.description"
-                                                auto-grow
-                                                clearable
-                                            />
                                         </div>
                                     </v-form>
                                 </div>
                                 <div>
-                                    <div class="text-subtitle-2 mb-2">Контакт</div>
-                                    <v-card variant="tonal">
+                                    <v-card variant="outlined" title="Контакт">
                                         <v-card-text>
                                             <div class="flex flex-col gap-1">
                                                 <div>
@@ -757,6 +770,32 @@ function onLeadChange(event, targetStatus) {
                                                     <strong>Telegram:</strong>
                                                     {{ currentLead.contact?.telegram || '—' }}
                                                 </div>
+                                            </div>
+                                        </v-card-text>
+                                    </v-card>
+                                </div>
+                                <div class="col-span-2">
+                                    <v-card variant="outlined" class="h-80" title="История комментариев">
+                                        <v-card-text class="h-[calc(100%-48px)] pr-0">
+                                            <div class="h-full overflow-y-auto pr-3" ref="commentsContainer">
+												<div v-if="comments.length === 0" class="text-center text-grey-500 mt-8">
+													Комментариев пока нет
+												</div>
+												<div v-else class="flex flex-col gap-3">
+													<div 
+														v-for="comment in comments" 
+														:key="comment.id"
+														class="border-l-2 border-l-primary pl-3 py-2"
+													>
+														<div class="text-body-2 mb-1">
+															{{ comment.text }}
+														</div>
+														<div class="text-caption text-grey-darken-1 flex items-center gap-2 justify-between">
+															<span>{{ comment.user?.name || 'Система' }}</span>
+															<span>{{ date.format(comment.updated_at || comment.created_at, 'fullDateTime') }}</span>
+														</div>
+													</div>
+												</div>
                                             </div>
                                         </v-card-text>
                                     </v-card>

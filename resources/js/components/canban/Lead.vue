@@ -32,9 +32,12 @@ const props = defineProps({
             <div class="d-flex ga-2 justify-space-between">
                 <div class="d-flex align-center ga-1" title="Контакт">
                     <v-icon size="small" icon="mdi-account"></v-icon>
-                    <span>{{
-                        lead.contact?.full_name || `${lead.contact?.name} ${lead.contact?.surname}`
-                    }}</span>
+                    <span v-if="lead.contact?.name || lead.contact?.surname">
+                        {{ `${lead.contact?.name ?? ''} ${lead.contact?.surname ?? ''}`.trim() }}
+                    </span>
+                    <span v-else>
+                        Без имени
+                    </span>
                 </div>
                 <div class="d-flex align-center ga-1" v-if="lead.user" title="Ответственный менеджер">
                     <v-icon size="small" icon="mdi-account-tie"></v-icon>
