@@ -17,9 +17,12 @@ enum Role: string
 
     public static function stringCases(): array
     {
-        return [
-            self::ADMIN->value,
-            self::SELLER->value,
-        ];
+        $result = [];
+
+        foreach (self::cases() as $case) {
+            $result[] = $case->value;
+        }
+
+        return $result;
     }
 }
