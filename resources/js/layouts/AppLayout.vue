@@ -29,7 +29,7 @@ const drawer = ref(window.innerWidth >= 1280);
 				<v-list-item v-if="userStore.user.role === 'admin'">
 					<RouterLink :to="{ name: 'users' }" class="d-flex ga-1" :class="$route.name === 'users' ? 'text-primary' : ''">
 						<v-icon icon="mdi-account-group"></v-icon>
-						Пользователи
+						Сотрудники
 					</RouterLink>
 				</v-list-item>
 				<v-list-item>
