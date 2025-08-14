@@ -20,12 +20,12 @@ const drawer = ref(window.innerWidth >= 1280);
 
 		<v-navigation-drawer v-model="drawer" location="left">
 			<v-list>
-				<v-list-item>
+				<!-- <v-list-item>
 					<RouterLink :to="{ name: 'home' }" class="d-flex ga-1" :class="$route.name === 'home' ? 'text-primary' : ''">
 						<v-icon icon="mdi-home-circle-outline"></v-icon>
 						Главная
 					</RouterLink>
-				</v-list-item>
+				</v-list-item> -->
 				<v-list-item v-if="userStore.user.role === 'admin'">
 					<RouterLink :to="{ name: 'users' }" class="d-flex ga-1" :class="$route.name === 'users' ? 'text-primary' : ''">
 						<v-icon icon="mdi-account-group"></v-icon>
@@ -34,13 +34,13 @@ const drawer = ref(window.innerWidth >= 1280);
 				</v-list-item>
 				<v-list-item>
 					<RouterLink :to="{ name: 'contacts' }" class="d-flex ga-1" :class="$route.name === 'contacts' ? 'text-primary' : ''">
-						<v-icon icon="mdi-account-group"></v-icon>
+						<v-icon icon="mdi-account-group-outline"></v-icon>
 						Контакты
 					</RouterLink>
 				</v-list-item>
 				<v-list-item>
 					<RouterLink :to="{ name: 'leads' }" class="d-flex ga-1" :class="$route.name === 'leads' ? 'text-primary' : ''">
-						<v-icon icon="mdi-account-group"></v-icon>
+						<v-icon icon="mdi-account-multiple-plus"></v-icon>
 						Лиды
 					</RouterLink>
 				</v-list-item>
