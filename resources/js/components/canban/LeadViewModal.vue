@@ -42,6 +42,10 @@ const contacts = reactive([]);
 const contactSearch = ref("");
 let contactsSearchTimeout = null;
 
+// Comment form state
+const commentText = ref("");
+const isSubmittingComment = ref(false);
+
 const editForm = useForm(
     "put",
     () => route("leads.update", { lead: props.leadId }),
@@ -66,10 +70,14 @@ const showDialog = computed({
 
 function closeModal() {
     showDialog.value = false;
-    currentLead.value = null;
-    comments.splice(0, comments.length);
-    editForm.reset();
-    editForm.errors = {};
+	setTimeout(() => {
+		currentLead.value = null;
+		comments.splice(0, comments.length);
+		commentText.value = "";
+		isSubmittingComment.value = false;
+		editForm.reset();
+		editForm.errors = {};
+	}, 200)
 }
 
 function loadLeadDetails(id) {
@@ -217,6 +225,34 @@ function handleUserSearch(val) {
     usersSearchTimeout = setTimeout(() => {
         loadUsers();
     }, 350);
+}
+
+function submitComment() {
+    if (!commentText.value.trim() || !props.leadId) return;
+    
+    isSubmittingComment.value = true;
+    
+    axios
+        .post(route("leads.comments.store", { lead: props.leadId }), {
+            text: commentText.value.trim(),
+        })
+        .then((response) => {
+            // Добавляем новый комментарий в список
+            comments.push(response.data);
+            commentText.value = "";
+            
+            // Прокрутить к последнему комментарию
+            setTimeout(() => {
+                if (commentsContainer.value) {
+                    commentsContainer.value.scrollTop =
+                        commentsContainer.value.scrollHeight;
+                }
+            }, 100);
+        })
+        .catch((error) => toastsStore.handleResponseError(error))
+        .finally(() => {
+            isSubmittingComment.value = false;
+        });
 }
 
 // Следить за изменениями leadId и загружать детали лида
@@ -422,12 +458,11 @@ watch(
                     <div class="col-span-2">
                         <v-card
                             variant="outlined"
-                            class="h-80"
-                            title="История комментариев"
+                            title="История"
                         >
-                            <v-card-text class="h-[calc(100%-48px)] pr-0">
+                            <v-card-text class="">
                                 <div
-                                    class="h-full overflow-y-auto pr-3"
+                                    class="h-60 overflow-y-auto pr-3 mb-4"
                                     ref="commentsContainer"
                                 >
                                     <div
@@ -462,6 +497,41 @@ watch(
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                
+                                <!-- Форма добавления комментария -->
+                                <div class="border-t pt-4">
+                                    <v-form @submit.prevent="submitComment">
+                                        <div class="relative">
+                                            <v-textarea
+                                                v-model="commentText"
+                                                label="Добавить комментарий"
+                                                variant="outlined"
+                                                density="comfortable"
+                                                rows="2"
+                                                max-rows="6"
+                                                auto-grow
+                                                maxlength="2000"
+												:hide-details="true"
+                                                counter
+                                                placeholder="Введите ваш комментарий..."
+                                                :disabled="isSubmittingComment"
+                                                required
+                                            >
+												<template v-slot:append-inner>
+													<v-btn
+														type="submit"
+														color="primary"
+														:loading="isSubmittingComment"
+														:disabled="!commentText.trim()"
+														size="small"
+														icon="mdi-arrow-right-thick"
+														@click="submitComment"
+													/>
+												</template>
+											</v-textarea>
+                                        </div>
+                                    </v-form>
                                 </div>
                             </v-card-text>
                         </v-card>

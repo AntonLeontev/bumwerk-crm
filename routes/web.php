@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadStatusController;
@@ -56,6 +57,10 @@ Route::controller(LeadStatusController::class)->group(function () {
     Route::put('lead-statuses/{status}', 'update')->name('lead-statuses.update');
     Route::delete('lead-statuses/{status}', 'destroy')->name('lead-statuses.destroy');
     Route::post('lead-statuses/save-new-order', 'saveNewOrder')->name('lead-statuses.save-new-order');
+});
+
+Route::controller(CommentController::class)->group(function () {
+    Route::post('leads/{lead}/comments', 'storeForLead')->name('leads.comments.store');
 });
 
 Route::view('reset-password', 'app')->name('password.reset');
