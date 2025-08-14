@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ContactStoreRequest;
+use App\Http\Requests\ContactUpdateRequest;
 use App\Models\Contact;
 use App\Models\Email;
 use App\Models\Phone;
@@ -76,9 +77,36 @@ class ContactController extends Controller
         return response()->json($contact->load('phone', 'email'));
     }
 
-    public function update(Request $request, string $id)
+    public function update(ContactUpdateRequest $request, Contact $contact)
     {
-        //
+        $validated = $request->validated();
+        $contact->update(Arr::except($validated, ['phone', 'email']));
+
+        // Обновляем или создаем телефон
+        if (array_key_exists('phone', $validated)) {
+            if ($validated['phone'] !== null) {
+                $contact->phone()->updateOrCreate(
+                    ['contact_id' => $contact->id],
+                    ['number' => $validated['phone']]
+                );
+            } else {
+                $contact->phone()?->delete();
+            }
+        }
+
+        // Обновляем или создаем email
+        if (array_key_exists('email', $validated)) {
+            if ($validated['email'] !== null) {
+                $contact->email()->updateOrCreate(
+                    ['contact_id' => $contact->id],
+                    ['address' => $validated['email']]
+                );
+            } else {
+                $contact->email()?->delete();
+            }
+        }
+
+        return response()->json($contact->load('phone', 'email'));
     }
 
     public function destroy(Contact $contact)

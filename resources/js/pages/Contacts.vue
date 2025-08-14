@@ -3,6 +3,7 @@ import AppLayout from "@/layouts/AppLayout.vue";
 import H1 from "@/components/H1.vue";
 import CrudPage from "@/components/CrudPage.vue";
 import DataTablePagination from "@/components/DataTablePagination.vue";
+import ContactEditModal from "@/components/contacts/ContactEditModal.vue";
 import { ref, reactive, watch, onMounted } from "vue";
 import { useForm } from "laravel-precognition-vue";
 import axios from "axios";
@@ -102,11 +103,33 @@ function loadItems({ page, itemsPerPage, sortBy, search }) {
 }
 
 const creating = ref(false);
+const editing = ref(false);
+const editingItem = ref(null);
 const deleting = ref(false);
 const deletingItem = ref(null);
 
 function openCreateModal(item) {
     creating.value = true;
+}
+
+function openEditModal(item) {
+    // Загружаем полные данные контакта
+    axios.get(route("contacts.show", { contact: item.id }))
+        .then((response) => {
+            editingItem.value = {
+                id: item.id,
+                name: response.data.name,
+                surname: response.data.surname,
+                patronymic: response.data.patronymic,
+                telegram: response.data.telegram,
+                phone: response.data.phone?.number,
+                email: response.data.email?.address,
+            };
+            editing.value = true;
+        })
+        .catch((error) => {
+            toastsStore.handleResponseError(error);
+        });
 }
 
 function openDeleteModal(item) {
@@ -141,6 +164,17 @@ function closeCreateForm() {
     creating.value = false;
     createForm.reset();
     createForm.errors = {};
+}
+
+function onContactUpdated() {
+    loadItems({
+        page: page.value,
+        itemsPerPage: itemsPerPage.value,
+        sortBy: sortBy.value,
+        search: search.value,
+    });
+    editing.value = false;
+    editingItem.value = null;
 }
 
 const createForm = useForm("post", route("contacts.store"), {
@@ -225,24 +259,23 @@ const submitCreateForm = () =>
                     </template>
 
                     <template v-slot:item.actions="{ item }">
-                        <!-- <v-icon
-                            class="me-2"
+                        <v-btn
+                            icon="mdi-pencil-outline"
+                            variant="plain"
                             size="small"
-                            @click="sendInvite(item)"
-                            v-if="!item.email_verified"
                             color="primary"
-                            title="Отправить еще одно приглашение"
+                            title="Редактировать контакт"
+                            @click="openEditModal(item)"
+                            class="me-2"
                         >
-                            mdi-email-arrow-right-outline
-                        </v-icon> -->
+                        </v-btn>
                         <v-btn
                             icon="mdi-trash-can-outline"
                             variant="plain"
                             size="small"
                             color="error"
-                            title="Удалить пользователя"
+                            title="Удалить контакт"
                             @click="openDeleteModal(item, $event)"
-                            v-if="userStore.user?.id !== item.id"
                         >
                         </v-btn>
                     </template>
@@ -383,6 +416,13 @@ const submitCreateForm = () =>
                         </template>
                     </v-card>
                 </v-dialog>
+
+                <!-- Модальное окно редактирования -->
+                <ContactEditModal
+                    v-model="editing"
+                    :contact="editingItem"
+                    @updated="onContactUpdated"
+                />
 
                 <v-dialog v-model="deleting" width="auto" max-width="400">
                     <v-card
