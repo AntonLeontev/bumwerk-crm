@@ -475,7 +475,10 @@ watch(
                                         <div
                                             v-for="comment in comments"
                                             :key="comment.id"
-                                            class="border-l-2 border-l-primary pl-3 py-2"
+                                            class="border-l-primary py-2"
+											:class="{
+												'border-l-2 pl-3': comment.user_id !== null,
+											}"
                                         >
                                             <div class="text-body-2 mb-1">
                                                 {{ comment.text }}
