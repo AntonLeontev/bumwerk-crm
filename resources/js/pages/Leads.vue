@@ -4,6 +4,7 @@ import H1 from "@/components/H1.vue";
 import CrudPage from "@/components/CrudPage.vue";
 import Lead from "@/components/canban/Lead.vue";
 import Column from "@/components/canban/Column.vue";
+import LeadViewModal from "@/components/canban/LeadViewModal.vue";
 import { ref, reactive, watch, onMounted, computed } from "vue";
 import { useForm } from "laravel-precognition-vue";
 import axios from "axios";
@@ -56,99 +57,18 @@ function loadLeads() {
 // -----------------
 const showEditDialog = ref(false);
 const currentLeadId = ref(null);
-const currentLead = ref(null);
-const comments = reactive([]);
-const commentsContainer = ref(null);
-const editForm = useForm("put", () => route("leads.update", { lead: currentLeadId.value }), {
-    title: "",
-    description: "",
-    amount: null,
-    contact_id: null,
-    status_id: null,
-    user_id: null,
-});
 
 function openEditModal(lead) {
     currentLeadId.value = lead.id;
     showEditDialog.value = true;
-    loadLeadDetails(lead.id);
 }
 
-function closeEditModal() {
-    showEditDialog.value = false;
-    currentLeadId.value = null;
-    currentLead.value = null;
-    comments.splice(0, comments.length);
-    editForm.reset();
-    editForm.errors = {};
-}
-
-function loadLeadDetails(id) {
-    axios
-        .get(route("leads.show", { lead: id }))
-        .then((response) => {
-            currentLead.value = response.data;
-            // Заполнить форму редактирования
-            editForm.title = currentLead.value.title || "";
-            editForm.description = currentLead.value.description || "";
-            editForm.amount = currentLead.value.amount ?? null;
-            editForm.contact_id = currentLead.value.contact_id ?? null;
-            editForm.status_id = currentLead.value.status_id ?? null;
-            editForm.user_id = currentLead.value.user_id ?? null;
-
-            // Убедиться, что выбранный контакт отображается в списке
-            if (currentLead.value.contact) {
-                const c = currentLead.value.contact;
-                const item = {
-                    id: c.id,
-                    title: [c.surname, c.name, c.patronymic].filter(Boolean).join(' '),
-                    subtitle: [c.phone?.number, c.email?.address].filter(Boolean).join(' • '),
-                };
-                if (!contacts.find((x) => x.id === item.id)) {
-                    contacts.unshift(item);
-                }
-            }
-
-            // Убедиться, что выбранный ответственный отображается в списке
-            if (currentLead.value.user) {
-                const u = currentLead.value.user;
-                const uItem = {
-                    id: u.id,
-                    title: u.name,
-                    subtitle: u.email,
-                };
-                if (!users.find((x) => x.id === uItem.id)) {
-                    users.unshift(uItem);
-                }
-            }
-
-            // Загрузить комментарии
-            if (currentLead.value.comments) {
-                comments.splice(0, comments.length, ...currentLead.value.comments);
-                // Прокрутить к последним комментариям
-                setTimeout(() => {
-					console.log(commentsContainer.value);
-					if (commentsContainer.value) {
-                        commentsContainer.value.scrollTop = commentsContainer.value.scrollHeight;
-                    }
-                }, 100);
-            }
-        })
-        .catch((error) => toastsStore.handleResponseError(error));
-}
-
-function submitEditLead() {
-    editForm
-        .submit()
-        .then((response) => {
-            // Обновить элемент в списке
-            const idx = leads.findIndex((l) => l.id === response.data.id);
-            if (idx !== -1) {
-                leads[idx] = response.data;
-            }
-            closeEditModal();
-        })
-        .catch((error) => toastsStore.handleResponseError(error));
+function handleLeadUpdated(updatedLead) {
+    // Обновить элемент в списке
+    const idx = leads.findIndex((l) => l.id === updatedLead.id);
+    if (idx !== -1) {
+        leads[idx] = updatedLead;
+    }
 }
 
 // -----------------
@@ -310,9 +230,6 @@ onMounted(() => {
 	setInterval(() => {
 		loadLeads();
 	}, 10000);
-
-	console.log(commentsContainer.value);
-	
 });
 
 const leadsByStatusId = computed(() => {
@@ -629,185 +546,12 @@ function onLeadChange(event, targetStatus) {
                     </v-card>
                 </v-dialog>
 
-                <v-dialog v-model="showEditDialog" max-width="720">
-                    <v-card>
-                        <v-card-title class="text-base">{{ currentLead?.title }}</v-card-title>
-                        <v-card-text>
-                            <div v-if="!currentLead">Загрузка...</div>
-                            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <v-form @submit.prevent="submitEditLead">
-                                        <div class="flex flex-col gap-3">
-                                            <v-text-field
-                                                v-model="editForm.title"
-                                                label="Название"
-                                                variant="outlined"
-                                                density="comfortable"
-                                                :error="!!editForm.errors.title"
-                                                :error-messages="editForm.errors.title"
-                                                maxlength="255"
-                                                required
-                                                clearable
-                                            />
-
-                                            <v-autocomplete
-                                                v-model="editForm.contact_id"
-                                                :items="contacts"
-                                                item-title="title"
-                                                item-value="id"
-                                                label="Контакт"
-                                                variant="outlined"
-                                                density="comfortable"
-                                                :loading="!contactsLoaded"
-                                                clearable
-                                                :error="!!editForm.errors.contact_id"
-                                                :error-messages="editForm.errors.contact_id"
-                                                @update:search="handleContactSearch"
-                                                :custom-filter="() => true"
-                                                no-data-text="Ничего не найдено"
-                                                hint="Введите минимум 3 символа для поиска"
-                                                :persistent-hint="true"
-                                                placeholder="Имя, телефон, email"
-                                            >
-                                                <template v-slot:item="{ props, item }">
-                                                    <v-list-item v-bind="props"
-                                                        :subtitle="item.raw.subtitle"
-                                                        :title="item.raw.title"
-                                                    />
-                                                </template>
-                                            </v-autocomplete>
-
-                                            <v-autocomplete
-                                                v-model="editForm.status_id"
-                                                :items="allStatuses"
-                                                item-title="name"
-                                                item-value="id"
-                                                label="Статус"
-                                                variant="outlined"
-                                                density="comfortable"
-                                                :error="!!editForm.errors.status_id"
-                                                :error-messages="editForm.errors.status_id"
-                                                required
-                                            >
-											<template v-slot:item="{ props, item }">
-                                                    <v-list-item v-bind="props"
-                                                        :title="item.raw.name"
-                                                    >
-														<template v-slot:prepend>
-															<v-icon icon="mdi-check" size="small" v-if="item.raw.is_win" color="success" />
-															<v-icon icon="mdi-close" size="small" v-if="item.raw.is_loose" color="error" />
-														</template>
-													</v-list-item>
-                                                </template>
-                                            </v-autocomplete>
-
-                                            <v-autocomplete
-                                                v-model="editForm.user_id"
-                                                :items="users"
-                                                item-title="title"
-                                                item-value="id"
-                                                label="Ответственный"
-                                                variant="outlined"
-                                                density="comfortable"
-                                                :loading="!usersLoaded"
-                                                clearable
-                                                :error="!!editForm.errors.user_id"
-                                                :error-messages="editForm.errors.user_id"
-                                                @update:search="handleUserSearch"
-                                                :custom-filter="() => true"
-                                                no-data-text="Ничего не найдено"
-                                                hint="Введите минимум 3 символа для поиска"
-                                                :persistent-hint="true"
-                                                placeholder="Имя или email"
-                                            >
-                                                <template v-slot:item="{ props, item }">
-                                                    <v-list-item v-bind="props"
-                                                        :subtitle="item.raw.subtitle"
-                                                        :title="item.raw.title"
-                                                    />
-                                                </template>
-                                            </v-autocomplete>
-
-                                            <v-text-field
-                                                v-model.number="editForm.amount"
-                                                label="Сумма"
-                                                type="number"
-                                                variant="outlined"
-                                                density="comfortable"
-                                                :error="!!editForm.errors.amount"
-                                                :error-messages="editForm.errors.amount"
-                                                clearable
-                                                min="0"
-                                            />
-                                        </div>
-                                    </v-form>
-                                </div>
-                                <div>
-                                    <v-card variant="outlined" title="Контакт">
-                                        <v-card-text>
-                                            <div class="flex flex-col gap-1">
-                                                <div>
-                                                    <strong>Фамилия:</strong>
-                                                    {{ currentLead.contact?.surname || '—' }}
-                                                </div>
-                                                <div>
-                                                    <strong>Имя:</strong>
-                                                    {{ currentLead.contact?.name || '—' }}
-                                                </div>
-                                                <div>
-                                                    <strong>Отчество:</strong>
-                                                    {{ currentLead.contact?.patronymic || '—' }}
-                                                </div>
-                                                <div>
-                                                    <strong>Телефоны:</strong>
-                                                    {{ currentLead.contact?.phones?.map((p) => p.number).join(', ') || '—' }}
-                                                </div>
-                                                <div>
-                                                    <strong>Emails:</strong>
-                                                    {{ currentLead.contact?.emails?.map((e) => e.address).join(', ') || '—' }}
-                                                </div>
-                                                <div>
-                                                    <strong>Telegram:</strong>
-                                                    {{ currentLead.contact?.telegram || '—' }}
-                                                </div>
-                                            </div>
-                                        </v-card-text>
-                                    </v-card>
-                                </div>
-                                <div class="col-span-2">
-                                    <v-card variant="outlined" class="h-80" title="История комментариев">
-                                        <v-card-text class="h-[calc(100%-48px)] pr-0">
-                                            <div class="h-full overflow-y-auto pr-3" ref="commentsContainer">
-												<div v-if="comments.length === 0" class="text-center text-grey-500 mt-8">
-													Комментариев пока нет
-												</div>
-												<div v-else class="flex flex-col gap-3">
-													<div 
-														v-for="comment in comments" 
-														:key="comment.id"
-														class="border-l-2 border-l-primary pl-3 py-2"
-													>
-														<div class="text-body-2 mb-1">
-															{{ comment.text }}
-														</div>
-														<div class="text-caption text-grey-darken-1 flex items-center gap-2 justify-between">
-															<span>{{ comment.user?.name || 'Система' }}</span>
-															<span>{{ date.format(comment.updated_at || comment.created_at, 'fullDateTime') }}</span>
-														</div>
-													</div>
-												</div>
-                                            </div>
-                                        </v-card-text>
-                                    </v-card>
-                                </div>
-                            </div>
-                        </v-card-text>
-                        <v-card-actions class="justify-end">
-                            <v-btn variant="text" @click="closeEditModal" :disabled="editForm.processing">Отмена</v-btn>
-                            <v-btn color="primary" :loading="editForm.processing" @click="submitEditLead">Сохранить</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
+				<LeadViewModal
+                    v-model="showEditDialog"
+                    :lead-id="currentLeadId"
+                    :all-statuses="allStatuses"
+                    @lead-updated="handleLeadUpdated"
+                />
             </template>
         </CrudPage>
     </AppLayout>
