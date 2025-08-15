@@ -481,7 +481,7 @@ watch(
 											}"
                                         >
                                             <div class="text-body-2 mb-1">
-                                                {{ comment.text }}
+                                                <span v-html="comment.text.replace(/\n/g, '<br>')"></span>
                                             </div>
                                             <div
                                                 class="text-caption text-grey-darken-1 flex items-center gap-2 justify-between"
